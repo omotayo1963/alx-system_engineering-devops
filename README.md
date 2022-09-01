@@ -1,1 +1,1 @@
-Task 0.Where am i?
+Write a script that changes the working directory to the previous one
