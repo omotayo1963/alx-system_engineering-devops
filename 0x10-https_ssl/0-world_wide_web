@@ -1,35 +1,16 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash 
+# Display information about subdomains.
 
-# Function to retrieve DNS information for a given domain and subdomain
-get_dns_info() {
-    subdomain=$1
-    domain=$2
-    dns_info=$(dig +short $subdomain.$domain)
-
-    if [[ -n "$dns_info" ]]; then
-        record_type=$(echo $dns_info | awk '{ print $1 }')
-        destination=$(echo $dns_info | awk '{ print $2 }')
-        echo "The subdomain $subdomain is a $record_type record and points to $destination"
-    else
-        echo "No DNS record found for subdomain $subdomain"
-    fi
+subdomaininfo () {
+    dig "$1" | grep -A1 'ANSWER SECTION:' | tail -n 1 | sed -r "s/$1./$2/g" | sed -r "s/ /\t/g" | sed -r "s/\t/ /g" | awk '{ print "The subdomain " $1 " is a " $4 " record and points to "  $5 }'
 }
 
-# Check if domain argument is provided
-if [[ -z "$1" ]]; then
-    echo "Please provide a domain name to audit"
-    exit 1
-fi
-
-# Display information for default subdomains (www, lb-01, web-01, web-02)
-if [[ -z "$2" ]]; then
-    get_dns_info www $1
-    get_dns_info lb-01 $1
-    get_dns_info web-01 $1
-    get_dns_info web-02 $1
+if [ "$#" -eq 2 ]
+then
+    subdomaininfo "$2.$1" "$2"
 else
-    # Display information for specified subdomain
-    get_dns_info $2 $1
+    subdomaininfo "www.$1" "www"
+    subdomaininfo "lb-01.$1" "lb-01"
+    subdomaininfo "web-01.$1" "web-01"
+    subdomaininfo "web-02.$1" "web-02"
 fi
-
-exit 0
