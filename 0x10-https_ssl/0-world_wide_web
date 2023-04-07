@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
-# Displays informtation about subdomains.
 
-# uncomment for debugging purposes.
-#set -x
+# Function to retrieve DNS information for a given domain and subdomain
+get_dns_info() {
+    subdomain=$1
+    domain=$2
+    dns_info=$(dig +short $subdomain.$domain)
 
-# for the checker to work please remove the colors.
-
-# colors
-blue='\e[1;34m'
-brown='\e[0;33m'
-reset='\033[0m'
-
-# variables & parameters
-subdomains=( "www" "lb-01" "web-01" "web-02" )
-domain="$1"
-sub="$2"
-
-dig_cmd () {
-	# func variables
-	sub="$2"
-	INFO="$(dig "$sub.$domain" | grep -A1 'ANSWER SECTION:' | awk 'NR==2')"
-	IP=$(echo "$INFO" | awk '{print $5}')
-	RECORD=$(echo "$INFO" | awk '{print $4}')
-
-	echo -e "${brown}The subdomain ${blue}$sub${brown} is a ${blue}$RECORD${brown} record and points to ${blue}$IP${reset}"
+    if [[ -n "$dns_info" ]]; then
+        record_type=$(echo $dns_info | awk '{ print $1 }')
+        destination=$(echo $dns_info | awk '{ print $2 }')
+        echo "The subdomain $subdomain is a $record_type record and points to $destination"
+    else
+        echo "No DNS record found for subdomain $subdomain"
+    fi
 }
 
-if [ $# -eq 1 ]; then
-	for subs in "${subdomains[@]}"; do
-		dig_cmd "$domain" "$subs"
-	done
-elif [ $# -eq 2 ]; then
-	dig_cmd "$domain" "$sub"
+# Check if domain argument is provided
+if [[ -z "$1" ]]; then
+    echo "Please provide a domain name to audit"
+    exit 1
 fi
+
+# Display information for default subdomains (www, lb-01, web-01, web-02)
+if [[ -z "$2" ]]; then
+    get_dns_info www $1
+    get_dns_info lb-01 $1
+    get_dns_info web-01 $1
+    get_dns_info web-02 $1
+else
+    # Display information for specified subdomain
+    get_dns_info $2 $1
+fi
+
+exit 0
